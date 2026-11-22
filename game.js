@@ -1241,6 +1241,27 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => keys.delete(e.code)); addEventListener('blur', () => keys.clear());
 const K = (...c) => c.some(x => keys.has(x));
+/* ---- dokunmatik kontroller: tuşları taklit eder ---- */
+const IS_TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+if (IS_TOUCH) {
+  document.body.classList.add('touch');
+  document.querySelectorAll('#touch button').forEach(b => {
+    const code = b.dataset.k, fire = t => window.dispatchEvent(new KeyboardEvent(t, { code }));
+    let down = false;
+    const up = () => { if (!down) return; down = false; b.classList.remove('on'); fire('keyup'); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); audioInit(); if (down) return; down = true; b.classList.add('on'); fire('keydown'); if (b.setPointerCapture) try { b.setPointerCapture(e.pointerId); } catch (x) {} });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => b.addEventListener(t, up));
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('dblclick', e => e.preventDefault());
+  $('btnStart').addEventListener('click', () => { const el = document.documentElement; try { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch (e) {} try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} });
+  /* garajda parmakla kaydırarak çekici değiştir */
+  let sx = null, pv = $('preview');
+  pv.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+  pv.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) stepTruck(dx < 0 ? 1 : -1); }, { passive: true });
+  if (!save.settings.qSet) { save.settings.qSet = 1; if (save.settings.quality === 'high' || !save.settings.quality) save.settings.quality = 'mid'; }
+}
 function toast(t, cls) { const d = document.createElement('div'); d.className = 'toast ' + (cls || ''); d.textContent = t; $('toasts').appendChild(d); setTimeout(() => d.remove(), 3300); while ($('toasts').children.length > 4) $('toasts').firstChild.remove(); }
 
 function resetShift() {

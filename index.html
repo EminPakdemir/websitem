@@ -2,7 +2,8 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#3a0b14">
 <title>Oto Lokomotif - Çekici Vardiyası</title>
 <style>
 *{box-sizing:border-box}
@@ -197,6 +198,34 @@ button.big.sec{margin-left:10px}
 #title .tcard{cursor:pointer;border:2px solid rgba(235,207,165,.55)!important}
 #title .tcard:hover{border-color:rgba(235,207,165,.85)!important}
 #title .tcard.sel{border:3px solid #ffd98a!important;box-shadow:0 0 0 2px rgba(255,217,138,.3),0 0 16px rgba(255,217,138,.4)!important}
+/* ---- mobil ---- */
+html,body{touch-action:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+#title,#menu,#results{touch-action:pan-x pan-y}
+#touch,#rotate{display:none}
+#touch button{pointer-events:auto;touch-action:none;border:2px solid rgba(235,207,165,.65);background:rgba(58,11,20,.62);color:#fff;font-weight:800;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;padding:0;-webkit-user-select:none;user-select:none}
+#touch button small{font-size:10px;font-weight:700;margin-top:3px;letter-spacing:.04em;color:#ebcfa5}
+#touch button.on{background:rgba(235,207,165,.85);color:#3a0b14}
+#touch button.on small{color:#3a0b14}
+#touch{position:fixed;inset:0;pointer-events:none;z-index:6}
+.tpad{position:absolute;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:14px}
+.tpad.tl{left:max(16px,env(safe-area-inset-left))}.tpad.tl button{width:86px;height:86px;font-size:34px;border-radius:24px}
+.tpad.tr{right:max(16px,env(safe-area-inset-right));align-items:flex-end}.tpad.tr button{width:86px;font-size:30px;border-radius:24px}
+.tpad.tr .gas{height:128px}.tpad.tr .brk{height:86px}
+.tmid{position:absolute;right:max(130px,calc(env(safe-area-inset-right) + 130px));bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-end}
+.tmid .hook{width:84px;height:84px;font-size:28px}
+.tmid .sm{width:64px;height:64px;font-size:11px}
+.ttop{position:absolute;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));display:flex;gap:8px}
+.ttop .sm{width:44px;height:44px;font-size:18px}
+body.touch #hud:not([hidden]) ~ #touch{display:block}
+body.touch #hud:not([hidden]) ~ #touch ~ #rotate{display:none}
+#rotate{position:fixed;inset:0;z-index:30;background:rgba(26,6,12,.96);color:#ebcfa5;font-size:22px;font-weight:700;text-align:center;align-items:center;justify-content:center;line-height:1.6;flex-direction:column;pointer-events:auto}
+@media (orientation:portrait){body.touch #hud:not([hidden]) ~ #rotate{display:flex}}
+@media (pointer:coarse) and (max-height:520px){
+ #tl,#tc,#compass,#jobs,#speedo,#target{zoom:.72}
+ #mini{zoom:.7}
+ .tpad.tl button,.tpad.tr button{width:72px}.tpad.tl button{height:72px}.tpad.tr .gas{height:108px}.tpad.tr .brk{height:72px}
+ .tmid{right:116px}.tmid .hook{width:72px;height:72px}.tmid .sm{width:54px;height:54px}
+}
 </style>
 </head>
 <body>
@@ -221,6 +250,13 @@ button.big.sec{margin-left:10px}
   <div id="pauseMsg" hidden>DURAKLATILDI — P ile devam</div>
 </div>
 
+<div id="touch">
+  <div class="tpad tl"><button data-k="KeyA">◀</button><button data-k="KeyD">▶</button></div>
+  <div class="tpad tr"><button data-k="KeyS" class="brk">▼<small>FREN</small></button><button data-k="KeyW" class="gas">▲<small>GAZ</small></button></div>
+  <div class="tmid"><button data-k="KeyE" class="hook">E<small>KANCA</small></button><button data-k="ShiftLeft" class="sm">TURBO</button><button data-k="Space" class="sm">EL FRENİ</button></div>
+  <div class="ttop"><button data-k="KeyH" class="sm">📯</button><button data-k="KeyR" class="sm">↺</button><button data-k="KeyC" class="sm">🎥</button><button data-k="KeyP" class="sm">⏸</button></div>
+</div>
+<div id="rotate">📱↻<br>Telefonu yatay çevir</div>
 <div id="title" class="screen">
   <div class="card">
     <h1 class="brand" aria-label="Oto Lokomotif - Çekici Vardiyası"><img src="assets/oto_lokomotif_logo.png" alt="Oto Lokomotif - Araç için her şey"><span class="sep"></span><span class="t">ÇEKİCİ VARDİYASI</span></h1>
