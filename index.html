@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oto Lokomotif - Çekici Vardiyası</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#12141c;color:#f2f4f8;font:15px/1.35 "Segoe UI",system-ui,sans-serif;user-select:none}
+#gl,#gl canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+.panel{background:rgba(14,16,24,.62);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 12px;backdrop-filter:blur(3px)}
+.big{font-size:26px;font-weight:700;line-height:1.1}
+.sub{font-size:12px;color:#aab2c4;letter-spacing:.04em}
+#hud{position:fixed;inset:0;pointer-events:none}
+#hud[hidden],.screen[hidden]{display:none}
+#tl{position:absolute;left:14px;top:14px}
+#tc{position:absolute;left:50%;top:14px;transform:translateX(-50%);text-align:center;min-width:110px}
+#tc #hTimer{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+#tc.low #hTimer{color:#ff6b5e}
+#jobs{position:absolute;left:14px;top:92px;width:260px}
+#compass{position:absolute;right:14px;top:222px;width:200px;text-align:center;padding:6px 14px}
+#target{display:none}
+#compass svg{display:block;margin:0 auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+#cLabel{font-weight:700;font-size:15px;margin-top:2px}
+
+#jobs .j{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
+#jobs .j:last-child{border:0}
+#jobs .j.on{color:#ffd54a;font-weight:600}
+#mini{position:absolute;right:14px;top:14px;width:200px;height:200px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:#14161d}
+#target{position:absolute;right:14px;top:222px;width:200px;text-align:center;font-size:14px}
+#speedo{position:absolute;left:14px;bottom:14px;width:210px}
+#speedo small{font-size:13px;color:#aab2c4;font-weight:400}
+.bar{height:7px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden;margin:4px 0 6px}
+.bar i{display:block;height:100%;width:0;background:#4cd37b}
+.bar.turbo i{background:#ff9f1a}
+.bar.hp i{background:#4cd37b}
+#prompt{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);font-size:19px;font-weight:600;text-shadow:0 2px 6px #000;text-align:center}
+#prompt b{background:#ffd54a;color:#111;padding:1px 8px;border-radius:5px;margin-right:6px}
+#towbar{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);width:300px;text-align:center}
+#toasts{position:absolute;left:50%;top:92px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast{background:rgba(14,16,24,.78);padding:6px 14px;border-radius:8px;font-weight:600;animation:fade 3.2s forwards}
+.toast.bad{background:rgba(160,30,24,.85)}
+.toast.good{background:rgba(24,110,60,.88)}
+@keyframes fade{0%{opacity:0;transform:translateY(-6px)}8%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+#pauseMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;background:rgba(0,0,0,.45)}
+#pauseMsg[hidden]{display:none}
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,rgba(60,40,70,.72),rgba(8,9,14,.94));overflow:auto;padding:16px}
+.card{max-width:860px;width:100%}
+h1{font-size:44px;margin:0;letter-spacing:.02em;color:#ffb703}
+h1 span{color:#fff}
+h2{margin:14px 0 6px;font-size:14px;letter-spacing:.08em;color:#aab2c4;text-transform:uppercase}
+p{margin:6px 0;color:#cfd5e3}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.up{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px}
+.up b{display:block;font-size:16px}
+.lv{display:flex;gap:4px;margin:6px 0}
+.lv i{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.15)}
+.lv i.f{background:#ffb703}
+button{font:inherit;font-weight:600;color:#111;background:#ffb703;border:0;border-radius:8px;padding:8px 16px;cursor:pointer}
+button:hover{background:#ffc83a}
+button.dis{background:#444a58;color:#8b93a6;cursor:not-allowed}
+button.big{font-size:20px;padding:12px 30px;margin-top:14px}
+kbd{background:#2a2f3d;border:1px solid #4a5166;border-bottom-width:2px;border-radius:5px;padding:0 6px;font:600 13px "Segoe UI",sans-serif;color:#fff}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:4px 16px;font-size:14px}
+.stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:17px}
+.garage{display:grid;grid-template-columns:minmax(240px,340px) 1fr;gap:12px;margin-bottom:4px;align-items:start}
+#preview{height:250px;border-radius:10px;background:radial-gradient(ellipse at 50% 65%,#3b4256,#141720);overflow:hidden;position:sticky;top:0;border:1px solid rgba(255,255,255,.12)}
+#preview canvas{width:100%!important;height:100%!important;display:block}
+#trucks{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.tcard{background:rgba(255,255,255,.07);border:2px solid transparent;border-radius:10px;padding:9px}
+.tcard.sel{border-color:#ffb703}
+.tcard .row{display:flex;justify-content:space-between;gap:6px}
+.stats{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;font-size:12px;margin:6px 0 8px;color:#cfd5e3}
+.dots{letter-spacing:2px;color:#ffb703;font-size:10px}
+.dots i{color:#444a5a;font-style:normal}
+@media(max-width:760px){.garage{grid-template-columns:1fr}}
+#btnMenu{position:absolute;top:18px;left:calc(50% + 78px);pointer-events:auto;width:44px;height:44px;border-radius:50%;padding:0;font-size:18px;background:rgba(14,16,24,.62);color:#fff;border:1px solid rgba(255,255,255,.22)}
+#btnMenu:hover{background:rgba(60,70,100,.8)}
+button.sec{background:#3a4256;color:#fff}
+button.sec:hover{background:#4a5470}
+.mbtns{display:grid;gap:8px;margin:14px 0}
+.mbtns button{text-align:left;font-size:17px;padding:11px 16px}
+.mbtns small{opacity:.7;font-weight:400}
+.set{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.09)}
+.set label{flex:1}
+.set small{color:#9aa3b5}
+.set input[type=range]{width:210px;accent-color:#ffb703}
+.set input[type=checkbox]{width:20px;height:20px;accent-color:#ffb703}
+select{background:#2a2f3d;color:#fff;border:1px solid #4a5166;border-radius:6px;padding:5px 9px;font:inherit}
+button.big.sec{margin-left:10px}
+.garage{display:block!important}
+#preview{height:270px;max-width:700px;margin:0 auto 10px!important;position:relative!important;top:auto!important}
+.tstrip{display:flex;align-items:stretch;gap:8px}
+#trucks{display:flex!important;flex:1;min-width:0;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 10px;scrollbar-width:thin}
+.tcard{flex:0 0 262px;scroll-snap-align:center}
+.navb{width:40px;padding:0;font-size:18px;border-radius:10px;flex:0 0 40px}
+.pv{position:absolute;top:50%;transform:translateY(-50%);width:50px;height:84px;border-radius:14px;background:rgba(20,24,34,.72);color:#fff;font-size:26px;padding:0;border:1px solid rgba(255,255,255,.28);z-index:3}
+.pv:hover{background:rgba(255,183,3,.85);color:#111}
+.pvl{left:12px}.pvr{right:12px}
+#pvName{position:absolute;left:0;right:0;bottom:10px;text-align:center;z-index:3;font-weight:700;font-size:17px;text-shadow:0 2px 6px #000;pointer-events:none}
+#title .card{max-width:1040px!important}
+#preview{height:min(540px,58vh)!important;max-width:none!important;margin-bottom:12px!important}
+#pvName{font-size:21px;bottom:14px}
+.pv{width:58px;height:100px;font-size:30px}
+/* sigdir:100vh */
+#title{height:100vh;height:100dvh;overflow:hidden;align-items:stretch;padding:clamp(8px,1.6vh,18px) 16px}
+#title .card{max-width:1220px!important;width:100%;margin:0 auto;height:100%;min-height:0;display:flex;flex-direction:column}
+#title h1{font-size:clamp(22px,4.4vh,40px);line-height:1.05;flex:0 0 auto}
+#title p{margin:2px 0 0;font-size:clamp(11px,1.65vh,14px);line-height:1.3;flex:0 0 auto}
+#title h2{margin:clamp(4px,1.1vh,10px) 0 clamp(2px,.6vh,6px);font-size:clamp(10px,1.5vh,13px);flex:0 0 auto}
+#title .keys{grid-template-columns:repeat(4,1fr);gap:1px 14px;font-size:clamp(10px,1.45vh,13px);flex:0 0 auto}
+#title kbd{padding:0 5px;font-size:clamp(10px,1.4vh,12px)}
+#title .garage{flex:1 1 0;min-height:0;display:flex!important;flex-direction:column;align-items:stretch!important}
+#title .tstrip{width:100%;min-width:0}
+#title #preview{flex:1 1 0;min-height:110px;height:auto!important;max-width:none!important;margin:0 0 8px!important}
+#title .tstrip{flex:0 0 auto}
+#title #trucks{padding:2px 2px 6px;gap:8px}
+#title .tcard{flex:0 0 clamp(200px,17.5vw,252px);padding:6px 9px}
+#title .tcard .row{font-size:clamp(12px,1.7vh,14px)}
+#title .tcard .row + .sub{display:none}
+#title .stats{grid-template-columns:auto 1fr auto 1fr;gap:0 8px;font-size:clamp(9px,1.35vh,11px);margin:3px 0 4px}
+#title .tcard .sub{font-size:clamp(9px,1.35vh,11px)}
+#title .tcard .sub[style]{margin-bottom:4px!important}
+#title .tcard button{padding:3px 12px;font-size:clamp(11px,1.6vh,13px)}
+#title #ups{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:0 0 auto}
+#title .up{display:grid;grid-template-columns:1fr auto;grid-template-areas:'n b' 'd b' 'l b';column-gap:8px;align-items:center;padding:5px 10px}
+#title .up b{grid-area:n;font-size:clamp(12px,1.7vh,15px)}
+#title .up .sub{grid-area:d;font-size:clamp(9px,1.35vh,11px)}
+#title .up .lv{grid-area:l;margin:3px 0 0}
+#title .up button{grid-area:b;padding:4px 10px;font-size:clamp(11px,1.6vh,13px)}
+#title .startrow{display:flex;gap:12px 14px;align-items:center;justify-content:center;flex-wrap:wrap;flex:0 0 auto;margin-top:clamp(4px,1vh,10px);text-align:center}
+#title .keys{text-align:center;justify-items:center;max-width:1000px;margin-left:auto;margin-right:auto}
+#title h2:has(+ .keys){text-align:center}
+#title .startrow .sub{flex:0 0 100%;text-align:center}
+#title .startrow button.big{min-width:clamp(180px,16vw,260px)}
+#title button.big{font-size:clamp(14px,2.3vh,19px);padding:clamp(5px,1.1vh,11px) 24px;margin:0}
+#title button.big.sec{margin-left:0}
+#pvName{font-size:clamp(14px,2.6vh,21px);bottom:clamp(22px,4.4vh,36px)}
+#pvDesc{position:absolute;left:70px;right:70px;bottom:6px;text-align:center;z-index:3;font-size:clamp(10px,1.6vh,13px);color:#d4dae8;text-shadow:0 1px 4px #000;pointer-events:none;line-height:1.25}
+#title .pv{width:clamp(36px,4.2vh,58px);height:clamp(60px,10vh,100px);font-size:clamp(20px,3.2vh,30px)}
+#title .pvcap{flex:0 0 auto;text-align:center;margin:0 0 6px}
+#title #pvName{position:static!important;font-size:clamp(14px,2.4vh,20px);text-shadow:none;pointer-events:auto;line-height:1.2}
+#title #pvDesc{position:static!important;margin-top:1px;font-size:clamp(10px,1.55vh,13px);color:#c9d0e0;text-shadow:none}
+#title #preview{margin-bottom:4px!important}
+#title #trucks{scrollbar-color:#6a7390 rgba(255,255,255,.08)}
+@media(max-height:760px){#title p{display:none}}
+@media(max-height:620px){#title{overflow:auto}#title .card{height:auto}#title #preview{min-height:200px}}
+/* bordo tema (Oto Lokomotif) */
+#title{background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800' preserveAspectRatio='xMaxYMid slice'><path fill='rgba(255,255,255,0.075)' d='M600 20C330 60 130 230 150 390C170 540 420 650 600 790L600 690C470 590 300 520 285 400C270 290 420 150 600 90Z'/><path fill='rgba(255,255,255,0.05)' d='M600 120C430 170 330 280 345 380C360 460 480 520 600 600L600 540C520 480 450 430 440 380C430 320 510 230 600 190Z'/></svg>") right center/auto 100% no-repeat,radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.5px) 0 0/9px 9px,radial-gradient(ellipse at 50% 62%,rgba(143,8,8,.5) 0%,rgba(98,10,15,.6) 40%,rgba(52,10,22,.78) 80%,rgba(34,8,16,.88) 100%)!important}
+#title h1.brand{display:flex;align-items:center;gap:clamp(8px,1.8vh,18px);margin:0;flex:0 0 auto}
+#title h1.brand img{height:clamp(30px,6.2vh,60px);width:auto;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
+#title h1.brand .sep{width:2px;align-self:stretch;margin:clamp(3px,.8vh,8px) 0;background:linear-gradient(rgba(235,207,165,0),rgba(235,207,165,.8),rgba(235,207,165,0))}
+#title h1.brand .t{color:#ebcfa5;font-size:clamp(17px,3.5vh,34px);letter-spacing:.07em;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+#title h2,#title .sub{color:#d9bfa0}
+#title .card p{color:#ecd9c0}
+#title .tcard{background:rgba(20,0,4,.38);border-color:rgba(235,207,165,.14)}
+#title .tcard.sel{border-color:#ebcfa5;background:rgba(235,207,165,.1)}
+#title .up{background:rgba(20,0,4,.38);border-color:rgba(235,207,165,.18)}
+#title #preview{background:radial-gradient(ellipse at 50% 70%,#7d141b 0%,#4d0c14 55%,#2a0710 100%);border-color:rgba(235,207,165,.25)}
+#title .dots{color:#ebcfa5}
+#title .dots i{color:rgba(235,207,165,.22)}
+#title .lv i{background:rgba(235,207,165,.2)}
+#title .lv i.f{background:#ebcfa5}
+#title button:not(.dis):not(.sec):not(.pv){background:#ebcfa5;color:#4a0a10}
+#title button:not(.dis):not(.sec):not(.pv):hover{background:#f5dfb9}
+#title button.sec{background:rgba(235,207,165,.16);color:#f3e2c6;border:1px solid rgba(235,207,165,.35)}
+#title button.sec:hover{background:rgba(235,207,165,.28)}
+#title button.dis{background:rgba(0,0,0,.3);color:#a98d86}
+#title .pv{background:rgba(40,4,10,.72);border-color:rgba(235,207,165,.45)}
+#title .pv:hover{background:#ebcfa5;color:#4a0a10}
+#title kbd{background:rgba(0,0,0,.35);border-color:rgba(235,207,165,.4);color:#f3e2c6}
+#title #trucks{scrollbar-color:#ebcfa5 rgba(255,255,255,.1)}
+#menu,#results{background:radial-gradient(ellipse at 50% 40%,rgba(120,12,18,.82),rgba(26,6,12,.95))}
+/* geliştirmeler önizlemenin üst boşluğunda */
+#title #preview{display:flex;flex-direction:column}
+#title #pvStage{flex:1 1 0;min-height:0;position:relative}
+#title #pvStage canvas{position:absolute!important;left:0;top:0;width:100%!important;height:100%!important}
+#title .updock{flex:0 0 auto;margin:clamp(5px,1vh,10px) clamp(52px,6vh,76px) 0;padding:clamp(4px,.8vh,8px) 10px;border-radius:12px;background:rgba(20,0,4,.5);border:1px solid rgba(235,207,165,.25);display:flex;align-items:center;gap:12px;z-index:4;position:relative}
+#title .updock .uph{flex:0 0 auto;display:flex;flex-direction:column;gap:2px;font-size:clamp(9px,1.35vh,11px);letter-spacing:.08em;text-transform:uppercase;color:#d9bfa0;padding-right:12px;border-right:1px solid rgba(235,207,165,.25)}
+#title .updock .wal{font-size:clamp(13px,2.1vh,18px);font-weight:800;color:#ffd98a;letter-spacing:0;text-transform:none}
+#title .updock #ups{flex:1;min-width:0;gap:8px}
+#title .updock .up{padding:clamp(3px,.6vh,6px) 10px;background:rgba(0,0,0,.22)}
+#title #pvName{margin-top:2px}
+#title .updock .up .sub{display:none}
+#title .updock .up{grid-template-areas:'n b' 'l b';row-gap:2px;cursor:help}
+#title .updock .up b{white-space:nowrap}
+/* opak kartlar, tasmayan yazilar */
+#title .tcard{background:#3a0b14!important;border:2px solid rgba(235,207,165,.28)!important;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#title .tcard.sel{background:#5b1522!important;border-color:#ebcfa5!important}
+#title .tcard .row b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#title .tcard .row span{white-space:nowrap;flex:0 0 auto}
+#title .stats span{white-space:nowrap}
+#title .stats{grid-template-columns:auto auto auto auto;justify-content:space-between;column-gap:10px}
+#title .tcard .sub[style]{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#title .updock .up{background:#40101a!important}
+#title #trucks{padding:5px 5px 8px!important}
+#title .tcard{cursor:pointer;border:2px solid rgba(235,207,165,.55)!important}
+#title .tcard:hover{border-color:rgba(235,207,165,.85)!important}
+#title .tcard.sel{border:3px solid #ffd98a!important;box-shadow:0 0 0 2px rgba(255,217,138,.3),0 0 16px rgba(255,217,138,.4)!important}
+</style>
+</head>
+<body>
+<div id="gl"></div>
+
+<div id="hud" hidden>
+  <div id="tl" class="panel"><div class="big">$<span id="hMoney">0</span></div><div class="sub">Bu vardiya: $<span id="hShift">0</span> · Teslimat <span id="hDel">0</span></div></div>
+  <div id="tc" class="panel"><div id="hTimer">5:00</div><div class="sub">VARDİYA</div></div>
+  <div id="compass" class="panel"><svg id="cArrow" viewBox="-50 -50 100 100" width="84" height="84"><g><path d="M0,-44 L34,6 L12,6 L12,40 L-12,40 L-12,6 L-34,6 Z" fill="#ffd54a" stroke="#111" stroke-width="5" stroke-linejoin="round"/></g></svg><div id="cLabel">—</div><div id="cDist" class="sub"></div><div id="cSig" class="sub" style="font-weight:700;font-size:13px;margin-top:2px"></div></div>
+  <div id="jobs" class="panel"></div>
+  <canvas id="mini" width="200" height="200"></canvas>
+  <div id="target" class="panel"></div>
+  <div id="speedo" class="panel">
+    <div class="big"><span id="hSpeed">0</span> <small>km/sa</small></div>
+    <div class="bar"><i id="hSpeedBar"></i></div>
+    <div class="sub">TURBO (Shift)</div><div class="bar turbo"><i id="hTurbo"></i></div>
+  </div>
+  <div id="prompt"></div>
+  <div id="towbar" class="panel" hidden><div class="sub" id="towLabel"></div><div class="bar hp"><i id="hHp"></i></div></div>
+  <div id="toasts"></div>
+  <button id="btnMenu" title="Duraklat / Ayarlar (P veya Esc)">⏸</button>
+  <div id="pauseMsg" hidden>DURAKLATILDI — P ile devam</div>
+</div>
+
+<div id="title" class="screen">
+  <div class="card">
+    <h1 class="brand" aria-label="Oto Lokomotif - Çekici Vardiyası"><img src="assets/oto_lokomotif_logo.png" alt="Oto Lokomotif - Araç için her şey"><span class="sep"></span><span class="t">ÇEKİCİ VARDİYASI</span></h1>
+    <p>Şehirde arızalanan araçları kancana tak, <b>servise</b> ya da <b>otoparka</b> sürükle. Halat uzun, araç ağır: dönüşlerde araç savrulur, binalara ve trafiğe çarparsa hasar alır. Hasar maaşından düşer.</p>
+    <h2>Garaj — çekici seç <span style="float:right;color:#9aa3b5;text-transform:none;letter-spacing:0">← → tuşları ya da resmin yanındaki oklarla çekici seç</span></h2>
+    <div class="garage"><div id="preview"><div class="updock"><div class="uph">Kazandığın parayla geliştir<span class="wal">Cüzdan: $<span id="wallet">0</span></span></div><div id="ups"></div></div><div id="pvStage"></div><button class="pv pvl" id="pvPrev" title="Önceki (←)">◀</button><button class="pv pvr" id="pvNext" title="Sonraki (→)">▶</button></div><div class="pvcap"><div id="pvName"></div><div id="pvDesc"></div></div><div class="startrow"><button class="big" id="btnStart">Vardiyaya Başla</button><button class="big sec" id="btnSettings">⚙ Ayarlar</button><span class="sub">Rekor: $<span id="bestT">0</span> · Vardiya 5 dakika, her teslimat +12 sn kazandırır.</span></div><div class="tstrip"><div id="trucks"></div></div></div>
+    <h2>Kontroller</h2>
+    <div class="keys">
+      <div><kbd>W</kbd> <kbd>S</kbd> gaz / fren, geri vites</div><div><kbd>A</kbd> <kbd>D</kbd> direksiyon</div>
+      <div><kbd>Boşluk</kbd> el freni (drift)</div><div><kbd>Shift</kbd> turbo</div>
+      <div><kbd>E</kbd> kancayı tak / çöz / teslim et</div><div><kbd>H</kbd> korna · <kbd>R</kbd> yola geri koy</div>
+      <div><kbd>C</kbd> kamera · <kbd>P</kbd> duraklat · <kbd>M</kbd> ses</div><div>Aracın <b>arkasına</b> geri geri yanaş, sonra <kbd>E</kbd></div>
+    </div>
+  </div>
+</div>
+
+<div id="menu" class="screen" hidden>
+  <div class="card" style="max-width:560px">
+    <h1 style="font-size:34px" id="menuTitle">DURAKLATILDI</h1>
+    <div id="menuBtns" class="mbtns">
+      <button id="mResume">▶ Devam Et <small>(Esc / P)</small></button>
+      <button id="mRestart" class="sec">↻ Vardiyayı Yeniden Başlat</button>
+      <button id="mEnd" class="sec">🏁 Vardiyayı Bitir (sonuçları gör)</button>
+      <button id="mGarage" class="sec">🏠 Garaja Dön</button>
+    </div>
+    <h2>Ayarlar</h2>
+    <div class="set"><label>Ses seviyesi</label><input id="sVol" type="range" min="0" max="100" step="5"><b id="sVolV" style="width:46px;text-align:right"></b></div>
+    <div class="set"><label>Sesi kapat <small>(M)</small></label><input id="sMute" type="checkbox"></div>
+    <div class="set"><label>Kamera <small>(C)</small></label><select id="sCam"><option value="0">Yakın takip</option><option value="1">Uzak takip</option><option value="2">Kuş bakışı</option></select></div>
+    <div class="set"><label>Grafik kalitesi</label><select id="sQual"><option value="low">Düşük (hızlı)</option><option value="mid">Orta</option><option value="high">Yüksek</option></select></div>
+    <div class="set"><label>Kamera sallanması</label><input id="sShake" type="checkbox"></div>
+    <div class="set"><label>Yön oku ve etiketi</label><input id="sArrow" type="checkbox"></div>
+    <div class="set"><label>Mini harita</label><input id="sMini" type="checkbox"></div>
+    <div style="margin-top:12px"><button id="mClose" class="sec" style="display:none">Kapat</button></div>
+  </div>
+</div>
+
+<div id="results" class="screen" hidden>
+  <div class="card" style="max-width:520px">
+    <h1 style="font-size:36px">VARDİYA <span>BİTTİ</span></h1>
+    <div id="resBody"></div>
+    <button class="big" id="btnAgain">Garaja Dön</button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="assets/logo.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
